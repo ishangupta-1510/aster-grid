@@ -28,7 +28,7 @@ const rows = [
   { id: "d", name: "Delta", region: "East", quarter: "Q2", amount: null },
 ];
 const model = () => new GridModel({ rows, columns });
-test("stable multi-sort, nulls last and original data untouched", () => {
+test("stable multi-sort, descending nulls last and original data untouched", () => {
   const m = model();
   m.setState({
     sort: [
@@ -223,4 +223,113 @@ test("XLSX is a real ZIP with typed inline string and numeric cells", () => {
   assert(xml.includes("<v>42</v>"));
   assert(xml.includes('state="frozen"'));
   assert.throws(() => xlsx([{ name: "Bad/name", rows: [] }]));
+});
+
+test("lexical sorting and missing values have a stable total order", () => {
+  const m = new GridModel({
+    columns: [{ field: "value" }],
+    rows: [
+      { id: "null", value: null },
+      { id: "missing" },
+      { id: "ten", value: "item10" },
+      { id: "two", value: "item2" },
+      { id: "upper", value: "Alpha" },
+      { id: "lower", value: "alpha" },
+    ],
+  });
+  m.setState({ sort: [{ id: "value", dir: "asc" }] });
+  assert.deepEqual(
+    m.view().rows.map((r) => r.id),
+    ["null", "missing", "upper", "lower", "ten", "two"],
+  );
+  m.setState({ sort: [{ id: "value", dir: "desc" }] });
+  assert.deepEqual(
+    m.view().rows.map((r) => r.id),
+    ["two", "ten", "lower", "upper", "null", "missing"],
+  );
+});
+test("text equality, empty operands, numeric blanks and range endpoints", () => {
+  assert(matches("ALPHA", { op: "eq", value: "alpha" }));
+  assert(!matches("Alpha", { op: "ne", value: "ALPHA" }));
+  assert(!matches(null, { op: "ne", value: 2 }, "number"));
+  assert(!matches(undefined, { op: "ne", value: 2 }, "number"));
+  for (const op of ["contains", "startsWith", "endsWith", "eq"])
+    assert(!matches("anything", { op, value: "" }));
+  assert(matches(null, { op: "ne", value: "" }));
+  assert(!matches("anything", { op: "ne", value: "" }));
+  assert(!matches(10, { op: "between", value: 10, to: 20 }));
+  assert(matches(15, { op: "between", value: 10, to: 20 }));
+  assert(!matches(20, { op: "between", value: 10, to: 20 }));
+  assert(matches(10, { op: "between", value: 10, to: 20, inclusive: true }));
+});
+test("quick search matches all terms across visible columns", () => {
+  const m = new GridModel({
+    columns: [
+      { field: "name" },
+      { field: "region" },
+      { field: "secret", hidden: true },
+    ],
+    rows: [
+      { id: "a", name: "Alpha", region: "West", secret: "hidden" },
+      { id: "b", name: "Beta", region: "East", secret: "hidden" },
+    ],
+  });
+  m.setState({ quick: "  WEST  alpha  " });
+  assert.deepEqual(
+    m.view().rows.map((r) => r.id),
+    ["a"],
+  );
+  m.setState({ quick: "hidden" });
+  assert.equal(m.view().rows.length, 0);
+  m.setState({ quick: " " });
+  assert.equal(m.view().rows.length, 2);
+});
+test("empty sums remain null and sparse pivot intersections do not invent zero", () => {
+  assert.equal(aggregates.sum([null, undefined, "3"]), null);
+  assert.equal(aggregates.sum([0]), 0);
+  const m = new GridModel({
+    columns: [
+      { field: "region" },
+      { field: "quarter" },
+      { field: "amount", aggregate: "sum" },
+    ],
+    rows: [
+      { id: 1, region: "A", quarter: "Q1", amount: 3 },
+      { id: 2, region: "B", quarter: "Q2", amount: 4 },
+    ],
+    state: {
+      pivot: {
+        rows: ["region"],
+        columns: ["quarter"],
+        values: [{ id: "amount", aggregate: "sum" }],
+      },
+    },
+  });
+  const p = m.pivot();
+  assert.equal(p.rows[0].data[p.columns[2].id], null);
+});
+test("groups sort by aggregate independently of leaf values and preserve first source value", () => {
+  const m = new GridModel({
+    columns: [
+      { field: "region" },
+      { field: "amount", type: "number", aggregate: "sum" },
+      { field: "label", aggregate: "first" },
+    ],
+    rows: [
+      { id: "a", region: "West", amount: 5, label: "first" },
+      { id: "b", region: "East", amount: 30, label: "east-first" },
+      { id: "c", region: "West", amount: 25, label: "second" },
+      { id: "d", region: "East", amount: 2, label: "east-second" },
+    ],
+    state: {
+      groupBy: ["region"],
+      expanded: ["*"],
+      sort: [{ id: "amount", dir: "asc" }],
+    },
+  });
+  assert.deepEqual(
+    m.view().rows.map((n) => (n.kind === "group" ? n.label : n.id)),
+    ["West", "a", "c", "East", "d", "b"],
+  );
+  assert.equal(m.view().rows[3].data.label, "east-first");
 });

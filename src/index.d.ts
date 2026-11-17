@@ -36,7 +36,7 @@ export type Filter =
       value: any;
       column?: string;
     }
-  | { op: "between"; value: any; to: any; column?: string }
+  | { op: "between"; value: any; to: any; inclusive?: boolean; column?: string }
   | { op: "in"; values: any[]; column?: string }
   | { op: "blank" | "notBlank"; column?: string }
   | { op: "and" | "or"; rules: Filter[] };
@@ -207,7 +207,11 @@ export class Grid<T extends Row = Row> {
   exportXLSX(options?: { selected?: boolean }): Uint8Array;
 }
 export const aggregates: Record<Aggregate, (values: any[]) => any>;
-export function matches(value: any, filter?: Filter | null): boolean;
+export function matches(
+  value: any,
+  filter?: Filter | null,
+  type?: Column["type"],
+): boolean;
 export function delimited(
   rows: any[][],
   separator?: string,

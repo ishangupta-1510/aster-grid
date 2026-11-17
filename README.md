@@ -117,7 +117,9 @@ Stable, unique row IDs are required for reliable selection and transactions. Sup
 
 All edits in a batch are parsed and validated before mutation. History holds 100 batches by default. Data replacement and transactions clear history to prevent stale undo. Validators see the pre-batch row, so cross-field batch validation belongs in application code. The `edit` event signals edits, undo, and redo; read the current model for current values. Selection and history apply only to loaded records in remote mode.
 
-Dates use normalized ISO strings; string ordering then matches calendar ordering. Supply `parse`/`validate` for calendar validity or other input formats. Numeric aggregates ignore null and nonnumeric values. Counts include nulls. Empty sums return zero; empty average/min/max return null. Sorting uses native stable sort, locale string comparison, numeric comparison for numbers, and nulls last.
+Dates use normalized ISO strings; string ordering then matches calendar ordering. Supply `parse`/`validate` for calendar validity or other input formats. Numeric aggregates ignore null and nonnumeric values. Counts include nulls. Empty sum/average/min/max results are null. Sorting uses stable lexical string comparison and numeric comparison for numbers. Null and undefined compare equally, before present values ascending and after them descending. Supply a custom comparator for locale-aware or natural numeric-string sorting. Groups sort by their key or aggregate values, while first/last aggregates retain source order.
+
+Text equality filters are case-insensitive. Numeric inequality excludes missing values. `between` excludes its endpoints by default; set `inclusive: true` to include them. Empty text operands do not match text; use `blank`/`notBlank` to filter empty cells. Quick search splits whitespace-separated terms and requires each term to occur in at least one visible column.
 
 ## Hierarchies, custom cells, and details
 

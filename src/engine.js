@@ -1,6 +1,9 @@
 /** Original data pipeline. No DOM and no runtime dependencies. */
 export const aggregates = {
-  sum: (values) => values.filter(finite).reduce((a, b) => a + b, 0),
+  sum: (values) => {
+    const numbers = values.filter(finite);
+    return numbers.length ? numbers.reduce((a, b) => a + b, 0) : null;
+  },
   count: (values) => values.length,
   min: (values) =>
     values
@@ -21,13 +24,20 @@ const finite = (value) => typeof value === "number" && Number.isFinite(value);
 const clone = (value) => structuredClone(value);
 const identity = (value) => JSON.stringify(value);
 const text = (value) => String(value ?? "").toLocaleLowerCase();
-export function matches(value, filter) {
+export function matches(value, filter, type) {
   if (!filter) return true;
   if (filter.op === "and" || filter.op === "or")
     return filter.rules[filter.op === "and" ? "every" : "some"]((f) =>
-      matches(value, f),
+      matches(value, f, type),
     );
   const target = filter.value;
+  // Empty text operands do not match text; use the explicit blank predicate.
+  if (
+    target === "" &&
+    ["contains", "startsWith", "endsWith", "eq"].includes(filter.op)
+  )
+    return false;
+  if (target === "" && filter.op === "ne") return value == null;
   switch (filter.op) {
     case "contains":
       return text(value).includes(text(target));
@@ -36,9 +46,15 @@ export function matches(value, filter) {
     case "endsWith":
       return text(value).endsWith(text(target));
     case "eq":
-      return value === target;
+      return typeof value === "string" && typeof target === "string"
+        ? text(value) === text(target)
+        : value === target;
     case "ne":
-      return value !== target;
+      if ((type === "number" || typeof target === "number") && value == null)
+        return false;
+      return typeof value === "string" && typeof target === "string"
+        ? text(value) !== text(target)
+        : value !== target;
     case "gt":
       return value != null && value > target;
     case "gte":
@@ -48,7 +64,12 @@ export function matches(value, filter) {
     case "lte":
       return value != null && value <= target;
     case "between":
-      return value != null && value >= target && value <= filter.to;
+      return (
+        value != null &&
+        (filter.inclusive
+          ? value >= target && value <= filter.to
+          : value > target && value < filter.to)
+      );
     case "in":
       return filter.values.includes(value);
     case "blank":
@@ -111,6 +132,7 @@ export class GridModel {
     if (new Set(entries.map((e) => e.id)).size !== entries.length)
       throw new Error("Duplicate row ID");
     this.rows = entries;
+    this.rowOrder = new Map(entries.map((entry, index) => [entry.id, index]));
     this.byId = new Map(entries.map((e) => [e.id, e]));
     this.selected = new Set(
       [...this.selected].filter((id) => this.byId.has(id)),
@@ -131,16 +153,28 @@ export class GridModel {
       return rule.rules[rule.op === "and" ? "every" : "some"]((f) =>
         this.test(entry, f),
       );
-    return matches(this.value(entry, rule.column), rule);
+    return matches(
+      this.value(entry, rule.column),
+      rule,
+      this.columns.find((c) => c.id === rule.column)?.type,
+    );
   }
   filteredRows() {
-    const quick = text(this.state.quick);
+    const quick = text(this.state.quick).split(/\s+/).filter(Boolean);
     return this.rows.filter(
       (row) =>
-        (!quick ||
-          this.columns.some((c) => text(this.value(row, c)).includes(quick))) &&
+        (!quick.length ||
+          quick.every((term) =>
+            this.columns.some(
+              (c) => !c.hidden && text(this.value(row, c)).includes(term),
+            ),
+          )) &&
         Object.entries(this.state.filters).every(([id, filter]) =>
-          matches(this.value(row, id), filter),
+          matches(
+            this.value(row, id),
+            filter,
+            this.columns.find((c) => c.id === id)?.type,
+          ),
         ) &&
         (!this.state.advancedFilter ||
           this.test(row, this.state.advancedFilter)) &&
@@ -154,18 +188,21 @@ export class GridModel {
         if (!c) continue;
         const av = this.value(a, c),
           bv = this.value(b, c);
-        // Nulls always last, independent of direction.
+        const direction = s.dir === "desc" ? -1 : 1;
+        // Missing values compare equally and sort before present values ascending.
         if (av == null || bv == null) {
-          if (av !== bv) return av == null ? 1 : -1;
-          continue;
+          if (av == null && bv == null) continue;
+          return (av == null ? -1 : 1) * direction;
         }
         const delta = c.compare
           ? c.compare(av, bv)
           : typeof av === "number" && typeof bv === "number"
             ? av - bv
-            : String(av).localeCompare(String(bv), undefined, {
-                numeric: true,
-              });
+            : String(av) === String(bv)
+              ? 0
+              : String(av) > String(bv)
+                ? 1
+                : -1;
         if (delta) return (s.dir === "desc" ? -1 : 1) * delta;
       }
       return 0;
@@ -192,18 +229,43 @@ export class GridModel {
       if (!buckets.has(key)) buckets.set(key, { value, rows: [] });
       buckets.get(key).rows.push(row);
     }
-    return [...buckets.values()].map((bucket) => {
+    const groups = [...buckets.values()].map((bucket) => {
       const next = [...path, bucket.value ?? null];
-      return {
+      const original = [...bucket.rows].sort(
+        (a, b) => this.rowOrder.get(a.id) - this.rowOrder.get(b.id),
+      );
+      const node = {
         id: "group:" + identity(next),
         kind: "group",
         depth,
         label: bucket.value ?? "(blank)",
         count: bucket.rows.length,
-        data: this.aggregate(bucket.rows),
+        data: this.aggregate(original),
         children: this.group(bucket.rows, fields, depth + 1, next),
       };
+      return {
+        node,
+        value: bucket.value,
+        order: this.rowOrder.get(original[0].id),
+      };
     });
+    groups.sort((a, b) => {
+      for (const sort of this.state.sort) {
+        const column = this.columns.find((c) => c.id === sort.id);
+        if (!column || (sort.id !== fields[depth] && !column.aggregate))
+          continue;
+        const av = sort.id === fields[depth] ? a.value : a.node.data[sort.id];
+        const bv = sort.id === fields[depth] ? b.value : b.node.data[sort.id];
+        let difference = 0;
+        if (av == null || bv == null)
+          difference = av == null && bv == null ? 0 : av == null ? -1 : 1;
+        else if (column.compare) difference = column.compare(av, bv);
+        else difference = av === bv ? 0 : av > bv ? 1 : -1;
+        if (difference) return difference * (sort.dir === "desc" ? -1 : 1);
+      }
+      return a.order - b.order;
+    });
+    return groups.map((group) => group.node);
   }
   tree(rows) {
     const roots = [],
