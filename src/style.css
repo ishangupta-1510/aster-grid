@@ -1,0 +1,374 @@
+.aster-grid {
+  --ag-bg: #fff;
+  --ag-ink: #243c35;
+  --ag-muted: #73847e;
+  --ag-line: #e1e8e3;
+  --ag-soft: #f5f8f5;
+  --ag-accent: #18745b;
+  --ag-selection: #e5f3eb;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 240px;
+  border: 1px solid var(--ag-line);
+  border-radius: 12px;
+  background: var(--ag-bg);
+  color: var(--ag-ink);
+  font:
+    13px/1.4 system-ui,
+    -apple-system,
+    sans-serif;
+  overflow: hidden;
+  box-shadow: 0 10px 40px #18372d08;
+  color-scheme: light;
+}
+.aster-grid[data-theme="dark"] {
+  --ag-bg: #172620;
+  --ag-ink: #d5e5dc;
+  --ag-muted: #9aafa3;
+  --ag-line: #34463b;
+  --ag-soft: #1e3027;
+  --ag-accent: #73cf9f;
+  --ag-selection: #264c39;
+  color-scheme: dark;
+}
+.aster-grid * {
+  box-sizing: border-box;
+}
+.aster-grid button,
+.aster-grid input,
+.aster-grid select {
+  font: inherit;
+  color: inherit;
+}
+.aster-grid button {
+  cursor: pointer;
+  border: 1px solid var(--ag-line);
+  background: var(--ag-bg);
+  border-radius: 6px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+.aster-grid button:hover {
+  background: var(--ag-selection);
+  border-color: var(--ag-accent);
+}
+.aster-grid button:focus-visible,
+.aster-grid input:focus-visible,
+.aster-grid select:focus-visible {
+  outline: 2px solid var(--ag-accent);
+  outline-offset: 1px;
+}
+.aster-grid input:not([type="checkbox"]),
+.aster-grid select {
+  border: 1px solid var(--ag-line);
+  border-radius: 6px;
+  padding: 7px 9px;
+  background: var(--ag-bg);
+  min-width: 0;
+}
+.aster-grid input[type="checkbox"] {
+  accent-color: var(--ag-accent);
+  cursor: pointer;
+}
+.aster-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--ag-line);
+  flex-shrink: 0;
+}
+.aster-brand {
+  font-size: 25px;
+  color: var(--ag-accent);
+  margin-right: 5px;
+}
+.aster-search {
+  flex: 1;
+  min-width: 120px !important;
+  max-width: 360px;
+  margin-right: auto;
+}
+.aster-main {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+}
+.aster-viewport {
+  position: relative;
+  overflow: auto;
+  flex: 1;
+  min-width: 0;
+  outline: none;
+  overscroll-behavior: contain;
+}
+.aster-viewport:focus-visible {
+  outline: 2px solid var(--ag-accent);
+  outline-offset: -2px;
+}
+.aster-header {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  height: 40px;
+  background: var(--ag-soft);
+  border-bottom: 1px solid var(--ag-line);
+}
+.aster-heading {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--ag-soft);
+  padding: 0 7px;
+  border-right: 1px solid var(--ag-line);
+  min-width: 0;
+}
+.aster-title {
+  border: 0 !important;
+  background: transparent !important;
+  padding: 4px !important;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+  font-size: 11px !important;
+  font-weight: 650 !important;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+.aster-menu-button {
+  border: 0 !important;
+  background: transparent !important;
+  padding: 3px 5px !important;
+}
+.aster-resize {
+  position: absolute;
+  right: -3px;
+  top: 0;
+  height: 100%;
+  width: 7px;
+  cursor: col-resize;
+  z-index: 4;
+}
+.aster-resize:hover {
+  background: var(--ag-accent);
+}
+.aster-canvas {
+  position: relative;
+  min-width: 100%;
+}
+.aster-row {
+  position: absolute;
+  left: 0;
+  display: flex;
+  width: 100%;
+  background: var(--ag-bg);
+}
+.aster-cell {
+  height: 100%;
+  padding: 9px 12px;
+  border-right: 1px solid var(--ag-line);
+  border-bottom: 1px solid var(--ag-line);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: inherit;
+  cursor: cell;
+  display: block;
+}
+.aster-cell svg {
+  vertical-align: middle;
+  color: var(--ag-accent);
+}
+.aster-number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.aster-row:hover {
+  background: var(--ag-soft);
+}
+.aster-row[aria-selected="true"] {
+  background: var(--ag-selection);
+}
+.aster-pinned {
+  z-index: 2;
+  box-shadow: 1px 0 var(--ag-line);
+}
+.aster-select-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: sticky;
+  left: 0;
+  width: 44px;
+  flex: 0 0 44px;
+  background: inherit;
+  z-index: 3;
+  border-right: 1px solid var(--ag-line);
+  border-bottom: 1px solid var(--ag-line);
+}
+.aster-in-range {
+  background: var(--ag-selection) !important;
+}
+.aster-active {
+  outline: 2px solid var(--ag-accent);
+  outline-offset: -2px;
+}
+.aster-editor {
+  width: 100%;
+  height: 100%;
+  padding: 2px 4px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 2px solid var(--ag-accent) !important;
+}
+.aster-cell:has(.aster-editor) {
+  padding: 2px;
+}
+.aster-group-row {
+  background: var(--ag-soft);
+  font-weight: 600;
+}
+.aster-group-toggle {
+  padding: 0 !important;
+  background: none !important;
+  border: none !important;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.aster-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-top: 1px solid var(--ag-line);
+  background: var(--ag-soft);
+  font-size: 11px;
+}
+.aster-status {
+  flex: 1;
+  color: var(--ag-muted);
+}
+.aster-footer button {
+  padding: 3px 8px;
+}
+.aster-panel {
+  width: 290px;
+  flex: 0 0 290px;
+  overflow: auto;
+  border-left: 1px solid var(--ag-line);
+  padding: 16px;
+  background: var(--ag-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.aster-panel[hidden] {
+  display: none;
+}
+.aster-panel-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.aster-panel h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.aster-panel h4 {
+  margin: 12px 0 0;
+}
+.aster-hint {
+  color: var(--ag-muted);
+  font-size: 12px;
+  margin: 0;
+  line-height: 1.6;
+}
+.aster-close {
+  border: 0 !important;
+  font-size: 20px !important;
+}
+.aster-column-control {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+}
+.aster-column-control select {
+  max-width: 100px;
+}
+.aster-column-control label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.aster-set-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 180px;
+  overflow: auto;
+}
+.aster-message {
+  padding: 10px 16px;
+  background: #fff1df;
+  color: #854a13;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.aster-message[hidden] {
+  display: none;
+}
+.aster-empty {
+  padding: 60px;
+  text-align: left;
+  color: var(--ag-muted);
+  position: sticky;
+  left: 0;
+}
+.aster-chart {
+  width: 100%;
+  height: auto;
+  min-height: 170px;
+  overflow: visible;
+}
+.aster-chart [role="button"] {
+  cursor: pointer;
+}
+.aster-chart [role="button"]:hover {
+  opacity: 0.7;
+}
+.aster-grid[aria-busy="true"] .aster-canvas {
+  opacity: 0.45;
+  pointer-events: none;
+}
+@media (max-width: 640px) {
+  .aster-toolbar {
+    padding: 8px;
+    gap: 5px;
+  }
+  .aster-toolbar button {
+    padding: 5px 7px;
+  }
+  .aster-search {
+    max-width: none;
+  }
+  .aster-panel {
+    position: absolute;
+    right: 0;
+    top: 100px;
+    bottom: 42px;
+    z-index: 10;
+    width: min(290px, 90%);
+    box-shadow: -10px 0 30px #0001;
+  }
+  .aster-status {
+    font-size: 10px;
+  }
+}

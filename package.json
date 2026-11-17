@@ -1,0 +1,42 @@
+{
+  "name": "aster-grid",
+  "version": "0.1.0",
+  "description": "An independent, MIT-licensed data grid with a headless engine and native DOM UI",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ishangupta-1510/aster-grid.git"
+  },
+  "homepage": "https://github.com/ishangupta-1510/aster-grid#readme",
+  "bugs": "https://github.com/ishangupta-1510/aster-grid/issues",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js"
+    },
+    "./style.css": "./src/style.css"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE",
+    "docs"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "demo": "node demo/server.js",
+    "test:browser": "node test/browser.mjs",
+    "check:types": "tsc --noEmit --strict --lib es2022,dom test/types.ts --module nodenext --moduleResolution nodenext"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "prettier": "^3.10.1",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
